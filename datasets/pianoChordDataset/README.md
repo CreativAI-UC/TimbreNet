@@ -6,7 +6,7 @@ Date: 25-9-19
 Contains 450 example of piano chords in .wav format.
 
 Details:
-- Sample rate: 32000 Hz
+- Sample rate: 16000 Hz
 - Duration: 4 seconds
 - Sound: Piano.
 - Recorded in Ableton Live.
