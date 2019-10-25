@@ -1,4 +1,4 @@
-Piano Chord Dataset:
+# Piano Chord Dataset
 
 Created by: Agustín Macaya Valladares
 Date: 25-9-19
