@@ -5,7 +5,7 @@ This project is in a initial developing stage.
 
 ## Datasets
 
-- Pianco chord datastet: Dataset with 450 piano chords audios.
+- PiancoChordDatastet: Dataset with 450 piano chords audios.
 
 ## Models
 
