@@ -15,8 +15,8 @@ This project is in a initial developing stage.
 
 - Clone this repository.
 - Open timbrenet_generate_chord.py
-- In the "trained_model_path" variable put the file with the weights of the trained model (there are some trained models in the "trained_models" folders.
+- In the "trained_model_path" variable put the file with the weights of a trained model (there are some trained models in the "trained_models" folder.
 - In the "latent_dim" variable select the latent dimention of the trained model.
 - In the "sample_points" variable put all the poins from where you want to sample chords. You can samplle as many chords as you want at the same time. Each point needs to have the same ammount of dimentions as the "latent_dim" variable
 - In the "chord_saving_path" put the path of the folder where you want to save the chords. If the folder does not exist, the code will create it for you.
-. Finally, run timbrenet_generate_chord.py
+- Finally, run timbrenet_generate_chord.py
