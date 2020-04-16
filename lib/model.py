@@ -1,5 +1,4 @@
 import tensorflow as tf
-print("OK")
 
 class CVAE(tf.keras.Model):
     def __init__(self, latent_dim):
