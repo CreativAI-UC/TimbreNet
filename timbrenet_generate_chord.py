@@ -37,7 +37,7 @@ def main():
     chord1 = latent_chord(tf.constant([sample_point], dtype='float32'),model,spec_helper)
     #IPython.display.display(IPython.display.Audio(chord1.audio, rate = 16000,normalize=False))
     
-    write('test2.wav', data = chord1.audio/2, rate = 16000)
+    write('test2.wav', data = chord1.audio/16, rate = 16000)
     print("\n\nSuccess, chord generated!\n\n")
     
 if __name__ == '__main__':
