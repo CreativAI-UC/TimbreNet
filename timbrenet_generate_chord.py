@@ -4,24 +4,12 @@ import numpy as np
 import tensorflow as tf
 from scipy.io.wavfile import write
 from lib.model import CVAE as Model
-from lib.latent_chord_class import latent_chord
+from lib.latent_chord import latent_chord
 from lib.specgrams_helper import SpecgramsHelper
 
 
     
-def main():
-    
-    ######SELECT HERE PATH OF TRAINED MODEL AND LATENT DIMENTION OF TRAINED MODEL (THEY MUST MATCH)#######
-    trained_model_path = './trained_models/2019_10_25/14_54_03mel_p0_latent_2_lr_3e-05_b_1_se_1_ee_501_ep_385'
-    latent_dim = 2
-
-    ######               WRITE HERE A LIST WITH THE SAMPLE POINTS             ########### 
-    ######EACH SAMPLE POINTNEEDS TO HAVE SAME NUMBER OF ELEMENTS AS latent_dim###########
-    sample_points = [[7, 8],[18,-18],[18,-7],[7,-30],[39,-10],[17,10]]
-    chord_saving_path = './generated_chords/'
-    
-    
-    
+def generate_chord_from_trained_model(trained_model_path, latent_dim, sample_points, chord_saving_path):
     if not os.path.exists(chord_saving_path):
         os.makedirs(chord_saving_path)
     
@@ -47,4 +35,14 @@ def main():
              
     
 if __name__ == '__main__':
-    main()
+    
+    #Select trained model path
+    trained_model_path = './trained_models/450_piano_chords/latent_2_lr_3e-05_epoch_385_of_501'
+    #Select latent dimension 
+    latent_dim = 2
+    #Select sample points
+    sample_points = [[7, 8],[18,-18],[18,-7],[7,-30],[39,-10],[17,10]]
+    #Select path for saving chords
+    chord_saving_path = './generated_chords/'
+    
+    generate_chord_from_trained_model(trained_model_path, latent_dim, sample_points, chord_saving_path)
