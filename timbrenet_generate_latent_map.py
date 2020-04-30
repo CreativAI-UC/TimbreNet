@@ -116,12 +116,12 @@ def timbrenet_generate_latent_map(trained_model_path,
     
 if __name__ == '__main__':
     #Select trained model path
-    #trained_model_path = './trained_models/450_piano_chords/latent_2_lr_3e-05_epoch_385_of_501'
-    trained_model_path = './trained_models/450_piano_chords/latent_8_lr_3e-05_epoch_141_of_501'
+    trained_model_path = './trained_models/450_piano_chords/latent_2_lr_3e-05_epoch_385_of_501'
+    #trained_model_path = './trained_models/450_piano_chords/latent_8_lr_3e-05_epoch_141_of_501'
     
     #Select latent dimension 
-    #latent_dim = 2
-    latent_dim = 8
+    latent_dim = 2
+    #latent_dim = 8
     
     #Select datasetr path to plot
     dataset_path = './datasets/450pianoChordDataset/audio/'
