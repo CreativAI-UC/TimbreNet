@@ -13,7 +13,7 @@ This project is in a initial developing stage.
 
 ## How to generate a chord from a trained model
 
-**Only available for latent = 2 models**
+**Only available for latent = 2 and latent = 8 models**
 
 - Clone this repository.
 - Open timbrenet_generate_chord.py
