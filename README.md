@@ -3,15 +3,17 @@ This project aims to create deep learning tools for musicians to work with the t
 
 This project is in a initial developing stage.
 
-## Datasets
+## Datasets.
 
 - PiancoChordDatastet: Dataset with 450 piano chords audios.
 
-## Models
+## Models.
 
 - TimbreNet_PianoChordVAE: VAE for encoding piano chords in a low-dimension latent space (2D - 3D). This latent space can be used to create new sounds of piano chords or create chord sequences by moving through the latent space.
 
-## How to generate a chord (from a trained model)
+## How to generate a chord from a trained model.
+
+**Only available for latent = 2 models**
 
 - Clone this repository.
 - Open timbrenet_generate_chord.py
