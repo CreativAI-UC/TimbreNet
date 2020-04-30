@@ -4,9 +4,8 @@ import itertools
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
-from scipy.io.wavfile import write
 from lib.model import CVAE as Model
-from lib.latent_chord_v2 import latent_chord
+from lib.latent_chord import latent_chord
 from lib.specgrams_helper import SpecgramsHelper
 
 

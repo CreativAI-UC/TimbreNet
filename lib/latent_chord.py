@@ -8,13 +8,20 @@ def import_audio(filename):
 
 class latent_chord:
     
-    triads     = [None,'C','Dm','Em','F','G','Am','Bdim']
-    colors     = ['k', 'b','g' ,'r' ,'c','m','y' ,'0.5']
-    octaves    = [None, '2','3','4']
-    mkr_type   = ['o', '.','*','1']
-    volumes    = [None, 'f'  ,'m'  ,'p']
-    mkr_size   = [2, 500,100,20]
-    instrument = ['piano','guitar']
+    triads      = [None,'C','Dm','Em','F','G','Am','Bdim']
+    octaves     = [None, '2','3','4']
+    colors      = [['k','k','k','k'],
+                  ['b','#000077','#0000FF','#00FFFF'],
+                  ['g','#005500','#00FF00','#66FF66'],
+                  ['r','#AA0000','#FF0000','#FF6666'],
+                  ['o','#EE6600','#FF9900','#FFCC00'],
+                  ['m','#990099','#CC3399','#FF66FF'],
+                  ['y','#DDDD00','#FFFF44','#FFFFCC'],
+                  ['0.5','#444444','#777777','#AAAAAA']]
+    volumes     = [None, 'f'  ,'m'  ,'p']
+    mkr_size    = [2, 500,100,20]
+    instruments = [None,'piano','guitar']
+    mkr_type    = ['o', '.','*']
     
     def __init__(self, latent, model, spec_helper):
         self.latent = latent
@@ -36,11 +43,11 @@ class latent_chord:
     
     @property
     def plt_color(self):
-        return self.colors[self.triads.index(self.triad)]
+        return self.colors[self.triads.index(self.triad)][self.octaves.index(self.octave)]
     
     @property
     def plt_mkr_type(self):
-        return self.mkr_type[self.octaves.index(self.octave)]
+        return self.mkr_type[self.instruments.index(self.instrument)]
     
     @property
     def plt_mkr_size(self):
