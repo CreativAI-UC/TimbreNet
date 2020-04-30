@@ -8,8 +8,11 @@ from lib.latent_chord import latent_chord
 from lib.specgrams_helper import SpecgramsHelper
 
 
+def generate_chord_from_trained_model(trained_model_path,
+                                      latent_dim,
+                                      sample_points,
+                                      chord_saving_path):
     
-def generate_chord_from_trained_model(trained_model_path, latent_dim, sample_points, chord_saving_path):
     if not os.path.exists(chord_saving_path):
         os.makedirs(chord_saving_path)
     
@@ -19,7 +22,6 @@ def generate_chord_from_trained_model(trained_model_path, latent_dim, sample_poi
                            sample_rate=16000,
                            mel_downscale=1)
    
-
     model = Model(latent_dim)
     print('\n\nLoading Trained Model...')
     model.load_weights(trained_model_path)
@@ -45,4 +47,7 @@ if __name__ == '__main__':
     #Select path for saving chords
     chord_saving_path = './generated_chords/'
     
-    generate_chord_from_trained_model(trained_model_path, latent_dim, sample_points, chord_saving_path)
+    generate_chord_from_trained_model(trained_model_path,
+                                      latent_dim,
+                                      sample_points,
+                                      chord_saving_path)

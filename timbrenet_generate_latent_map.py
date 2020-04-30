@@ -9,14 +9,21 @@ from lib.model import CVAE as Model
 from lib.latent_chord_v2 import latent_chord
 from lib.specgrams_helper import SpecgramsHelper
 
-def timbrenet_generate_latent_map(trained_model_path,latent_dim,instruments,chords,volumes,examples):
+
+def timbrenet_generate_latent_map(trained_model_path,
+                                  latent_dim,
+                                  dataset_path,
+                                  instruments,
+                                  chords,
+                                  volumes,
+                                  examples):
+    
     extention = '.wav'
     spec_helper = SpecgramsHelper(audio_length=64000,
                            spec_shape=(128, 1024),
                            overlap=0.75,
                            sample_rate=16000,
                            mel_downscale=1)
-
 
     model = Model(latent_dim)
     print('\n\nLoading Trained Model...')
@@ -30,7 +37,7 @@ def timbrenet_generate_latent_map(trained_model_path,latent_dim,instruments,chor
         for chord in chords:
             for volume in volumes:
                 for example in examples:
-                    latent_dataset.append(latent_chord.from_file(path,instrument+chord+volume+example+extention,model,spec_helper))
+                    latent_dataset.append(latent_chord.from_file(dataset_path,instrument+chord+volume+example+extention,model,spec_helper))
 
     print('Success Importing Dataset!\n')
     
@@ -54,7 +61,6 @@ def timbrenet_generate_latent_map(trained_model_path,latent_dim,instruments,chor
     legend_name_list = list(itertools.product(instruments,triads, octaves, volumes))
     legend_elements = []
     legend_names = []
-
 
     #GENERATE PLOT 
     fig = plt.figure(figsize=(13,13))
@@ -83,17 +89,24 @@ def timbrenet_generate_latent_map(trained_model_path,latent_dim,instruments,chor
     
     
 if __name__ == '__main__':
+    
     #Select trained model path
     trained_model_path = './trained_models/450_piano_chords/latent_2_lr_3e-05_epoch_385_of_501'
     #Select latent dimension 
     latent_dim = 2
     #Select datasetr path to plot
-    path = './datasets/450pianoChordDataset/audio/'
+    dataset_path = './datasets/450pianoChordDataset/audio/'
     #Select elements of dataset to plot
     instruments = ['piano_']
     chords = ['C2_','Dm2_','Em2_','F2_','G2_','Am2_','Bdim2_','C3_','Dm3_','Em3_','F3_','G3_','Am3_','Bdim3_','C4_']
     volumes = ['f_','m_','p_']
     examples = ['0','1','2','3','4','5','6','7','8','9']
     
-    timbrenet_generate_latent_map(trained_model_path,latent_dim,instruments,chords,volumes,examples)
+    timbrenet_generate_latent_map(trained_model_path,
+                                  latent_dim,
+                                  dataset_path,
+                                  instruments,
+                                  chords,
+                                  volumes,
+                                  examples)
     
