@@ -58,6 +58,15 @@ class latent_chord:
         return self.plt_color, self.plt_mkr_type, self.plt_mkr_size
     
     @property
+    def one_hot_label(self):
+        one_hot = np.zeros((1,len(self.triads)+len(self.octaves)+len(self.volumes)+len(self.instruments)))
+        one_hot[0,self.triads.index(self.triad)] = 1
+        one_hot[0,self.octaves.index(self.octave)+len(self.triads)] = 1
+        one_hot[0,self.volumes.index(self.volume)+len(self.triads)+len(self.octaves)] = 1
+        one_hot[0,self.instruments.index(self.instrument)+len(self.triads)+len(self.octaves)+len(self.volumes)] = 1
+        return one_hot
+    
+    @property
     def audio(self):
         spec = self.model.decode(self.latent)
         specA = spec[:,:,:,0]*13.815511 / -tf.math.reduce_min(spec[:,:,:,0])

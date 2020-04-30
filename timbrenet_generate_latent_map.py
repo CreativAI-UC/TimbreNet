@@ -4,8 +4,9 @@ import itertools
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
+from sklearn.cross_decomposition import CCA
 from lib.model import CVAE as Model
-from lib.latent_chord import latent_chord
+from lib.latent_chord_v2 import latent_chord
 from lib.specgrams_helper import SpecgramsHelper
 
 
@@ -16,13 +17,13 @@ def timbrenet_generate_latent_map(trained_model_path,
                                   chords,
                                   volumes,
                                   examples):
-    
     extention = '.wav'
     spec_helper = SpecgramsHelper(audio_length=64000,
                            spec_shape=(128, 1024),
                            overlap=0.75,
                            sample_rate=16000,
                            mel_downscale=1)
+
 
     model = Model(latent_dim)
     print('\n\nLoading Trained Model...')
@@ -39,6 +40,22 @@ def timbrenet_generate_latent_map(trained_model_path,
                     latent_dataset.append(latent_chord.from_file(dataset_path,instrument+chord+volume+example+extention,model,spec_helper))
 
     print('Success Importing Dataset!\n')
+    
+    if latent_dim == 2:
+        print('\n\nGenerating map for latent = 2')
+    else:
+        print('\n\nGenerating map for latent = '+str(latent_dim))
+        print('Generating CCA Analysis...')
+        X = np.zeros((len(latent_dataset),latent_dim))
+        Y = np.zeros((len(latent_dataset),np.shape(latent_dataset[0].one_hot_label)[1]))
+
+        for i in range(len(latent_dataset)):
+            X[i]=latent_dataset[i].latent
+            Y[i]=latent_dataset[i].one_hot_label
+            
+        cca = CCA(n_components=2).fit(X, Y)
+        X_cca = cca.transform(X)
+        print('Duccess Generating CCA Analysis!\n')
     
     #LEGEND DATA
     triads      = ['None','C','Dm','Em','F','G','Am','Bdim']
@@ -61,6 +78,7 @@ def timbrenet_generate_latent_map(trained_model_path,
     legend_elements = []
     legend_names = []
 
+
     #GENERATE PLOT 
     fig = plt.figure(figsize=(13,13))
     ax = fig.add_subplot(1, 1, 1)
@@ -73,28 +91,41 @@ def timbrenet_generate_latent_map(trained_model_path,
             if legen_data in legend_mkr_list:
                 i = legend_mkr_list.index(legen_data)
                 name = legend_name_list[i]
-                legend_elements.append(element)#CAMBIO
+                legend_elements.append(element)
                 legend_names.append(str(name[0])+'_'+str(name[1])+str(name[2])+'_'+str(name[3]))
                 legend_mkr_list.remove(legen_data)
                 legend_name_list.remove(name)
-
-        plt.legend(legend_elements,legend_names,ncol=3)
-        plt.title('Latent = '+str(latent_dim),fontsize=20)
-        plt.grid()
-        plt.show()
         
     else:
-        print('Code not implemented for latent_dim = '+str(latent_dim)+' yet')
+        for j in range(len(latent_dataset)):   
+            element = ax.scatter(X_cca[j,0], X_cca[j,1], c=latent_dataset[j].plt_color, marker = latent_dataset[j].plt_mkr_type,s=latent_dataset[j].plt_mkr_size)
+            legen_data = (latent_dataset[j].plt_mkr_type, latent_dataset[j].plt_color, latent_dataset[j].plt_mkr_size)
+            if legen_data in legend_mkr_list:
+                i = legend_mkr_list.index(legen_data)
+                name = legend_name_list[i]
+                legend_elements.append(element)
+                legend_names.append(str(name[0])+'_'+str(name[1])+str(name[2])+'_'+str(name[3]))
+                legend_mkr_list.remove(legen_data)
+                legend_name_list.remove(name)
+                
+    plt.legend(legend_elements,legend_names,ncol=3)
+    plt.title('Latent = '+str(latent_dim),fontsize=20)
+    plt.grid()
+    plt.show()
     
     
 if __name__ == '__main__':
-    
     #Select trained model path
-    trained_model_path = './trained_models/450_piano_chords/latent_2_lr_3e-05_epoch_385_of_501'
+    #trained_model_path = './trained_models/450_piano_chords/latent_2_lr_3e-05_epoch_385_of_501'
+    trained_model_path = './trained_models/450_piano_chords/latent_8_lr_3e-05_epoch_141_of_501'
+    
     #Select latent dimension 
-    latent_dim = 2
+    #latent_dim = 2
+    latent_dim = 8
+    
     #Select datasetr path to plot
     dataset_path = './datasets/450pianoChordDataset/audio/'
+    
     #Select elements of dataset to plot
     instruments = ['piano_']
     chords = ['C2_','Dm2_','Em2_','F2_','G2_','Am2_','Bdim2_','C3_','Dm3_','Em3_','F3_','G3_','Am3_','Bdim3_','C4_']
@@ -108,4 +139,3 @@ if __name__ == '__main__':
                                   chords,
                                   volumes,
                                   examples)
-    

@@ -13,8 +13,6 @@ This project is in a initial developing stage.
 
 ## How to generate a chord from a trained model
 
-**Only available for latent = 2 and latent = 8 models**
-
 - Clone this repository.
 - Open timbrenet_generate_chord.py
 - In the "trained_model_path" variable put the file with the weights of a trained model (there are some trained models in the "trained_models" folder.
@@ -24,8 +22,6 @@ This project is in a initial developing stage.
 - Finally, run timbrenet_generate_chord.py
 
 ## How to generate a 2D latent map
-
-**Only available for latent = 2 models**
 
 - Clone this repository.
 - Open timbrenet_generate_latent_map.py
