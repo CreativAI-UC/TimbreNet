@@ -20,3 +20,16 @@ This project is in a initial developing stage.
 - In the "sample_points" variable put all the poins from where you want to sample chords. You can samplle as many chords as you want at the same time. Each point needs to have the same ammount of dimentions as the "latent_dim" variable
 - In the "chord_saving_path" put the path of the folder where you want to save the chords. If the folder does not exist, the code will create it for you.
 - Finally, run timbrenet_generate_chord.py
+
+## How to generate a 2D latent map.
+
+**Only available for latent = 2 models**
+
+- Clone this repository.
+- Open timbrenet_generate_latent_map.py
+- In the "trained_model_path" variable put the file with the weights of a trained model (there are some trained models in the "trained_models" folder.
+- In the "instruments" select the instruments of the dataset you want to plot.
+- In the "chords" select the chords of the dataset you want to plot.
+- In the "volumes" select the volumes of the dataset you want to plot.
+- In the "examples" select the examples of the dataset you want to plot.
+- Finally, run timbrenet_generate_latent_map.py
