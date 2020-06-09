@@ -3,6 +3,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
 from tensorflow.keras.optimizers import Adam
 
+
 import os
 import pickle
 import numpy as np
@@ -277,6 +278,57 @@ class TimbreNet_Model():
         self.model.load_weights(filepath)
 
         
+    def train(self, x_train, batch_size, epochs, run_folder, print_every_n_batches = 100, initial_epoch = 0, lr_decay = 1):
+
+        #custom_callback = CustomCallback(run_folder, print_every_n_batches, initial_epoch, self)
+        #lr_sched = step_decay_schedule(initial_lr=self.learning_rate, decay_factor=lr_decay, step_size=1)
+        
+        #checkpoint_filepath=os.path.join(run_folder, "weights/weights-{epoch:03d}-{loss:.2f}.h5")
+        #checkpoint1 = ModelCheckpoint(checkpoint_filepath, save_weights_only = True, verbose=1)
+        #checkpoint2 = ModelCheckpoint(os.path.join(run_folder, 'weights/weights.h5'), save_weights_only = True, verbose=1)
+
+        #callbacks_list = [checkpoint1, checkpoint2, custom_callback, lr_sched]
+
+        self.model.fit(     
+            x_train
+            , x_train
+            , batch_size = batch_size
+            , shuffle = True
+            , epochs = epochs
+            , initial_epoch = initial_epoch
+            #, callbacks = callbacks_list
+        )
+        
+        
+    def train_with_generator(self, data_flow, epochs, steps_per_epoch, run_folder, print_every_n_batches = 100, initial_epoch = 0, lr_decay = 1, ):
+        
+
+        #custom_callback = CustomCallback(run_folder, print_every_n_batches, initial_epoch, self)
+        #lr_sched = step_decay_schedule(initial_lr=self.learning_rate, decay_factor=lr_decay, step_size=1)
+
+        #checkpoint_filepath=os.path.join(run_folder, "weights/weights-{epoch:03d}-{loss:.2f}.h5")
+        #checkpoint1 = ModelCheckpoint(checkpoint_filepath, save_weights_only = True, verbose=1)
+        #checkpoint2 = ModelCheckpoint(os.path.join(run_folder, 'weights/weights.h5'), save_weights_only = True, verbose=1)
+
+        #callbacks_list = [checkpoint1, checkpoint2, custom_callback, lr_sched]
+
+        #self.model.save_weights(os.path.join(run_folder, 'weights/weights.h5'))
+                
+        self.model.fit_generator(
+            data_flow
+            , shuffle = True
+            , epochs = epochs
+            , initial_epoch = initial_epoch
+            #, callbacks = callbacks_list
+            , steps_per_epoch=steps_per_epoch 
+            )
+        '''self.model.fit(
+            x=None, y=None, batch_size=None, epochs=1, verbose=1, callbacks=None,
+            validation_split=0.0, validation_data=None, shuffle=True, class_weight=None,
+            sample_weight=None, initial_epoch=0, steps_per_epoch=None,
+            validation_steps=None, validation_batch_size=None, validation_freq=1,
+            max_queue_size=10, workers=1, use_multiprocessing=False
+            )'''
         
         
 
