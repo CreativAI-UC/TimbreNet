@@ -396,7 +396,7 @@ class TimbreNet_Model():
         image_callback = LambdaCallback(on_epoch_end=image_gen)
 
         
-        callbacks_list = [checkpoint1, checkpoint2, scalar_callback,image_callback]
+        callbacks_list = [checkpoint2, scalar_callback,image_callback]
         
         self.model.fit(
             data_flow
