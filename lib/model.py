@@ -2,15 +2,16 @@ from tensorflow.keras.layers import Input, Conv2D, Conv2DTranspose, Flatten, Den
 from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import ModelCheckpoint, TensorBoard
+from tensorflow.keras.callbacks import ModelCheckpoint, TensorBoard, LambdaCallback
 
 from lib.specgrams_helper import SpecgramsHelper
 
-
+import io
 import os
 import pickle
 import numpy as np
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
 spec_helper = SpecgramsHelper(audio_length=64000,
                                   spec_shape=(128, 1024),
@@ -318,52 +319,22 @@ class TimbreNet_Model():
             
     def load_weights(self, filepath):
         self.model.load_weights(filepath)
-
-        
-    def train(self, x_train, batch_size, epochs, run_folder, print_every_n_batches = 100, initial_epoch = 0, lr_decay = 1):
-
-        #custom_callback = CustomCallback(run_folder, print_every_n_batches, initial_epoch, self)
-        #lr_sched = step_decay_schedule(initial_lr=self.learning_rate, decay_factor=lr_decay, step_size=1)
-        
-        #checkpoint_filepath=os.path.join(run_folder, "weights/weights-{epoch:03d}-{loss:.2f}.h5")
-        #checkpoint1 = ModelCheckpoint(checkpoint_filepath, save_weights_only = True, verbose=1)
-        #checkpoint2 = ModelCheckpoint(os.path.join(run_folder, 'weights/weights.h5'), save_weights_only = True, verbose=1)
-
-        #callbacks_list = [checkpoint1, checkpoint2, custom_callback, lr_sched]
-
-        self.model.fit(     
-            x_train
-            , x_train
-            , batch_size = batch_size
-            , shuffle = True
-            , epochs = epochs
-            , initial_epoch = initial_epoch
-            #, callbacks = callbacks_list
-        )
-        
-        
-    def train_with_generator(self, data_flow, epochs, steps_per_epoch, run_folder, print_every_n_batches = 100, initial_epoch = 0, lr_decay = 1, ):
-        
-
-        #custom_callback = CustomCallback(run_folder, print_every_n_batches, initial_epoch, self)
-        #lr_sched = step_decay_schedule(initial_lr=self.learning_rate, decay_factor=lr_decay, step_size=1)
-
-        #checkpoint_filepath=os.path.join(run_folder, "weights/weights-{epoch:03d}-{loss:.2f}.h5")
-        #checkpoint1 = ModelCheckpoint(checkpoint_filepath, save_weights_only = True, verbose=1)
-        #checkpoint2 = ModelCheckpoint(os.path.join(run_folder, 'weights/weights.h5'), save_weights_only = True, verbose=1)
-
-        #callbacks_list = [checkpoint1, checkpoint2, custom_callback, lr_sched]
-
-        #self.model.save_weights(os.path.join(run_folder, 'weights/weights.h5'))
-                
-        self.model.fit_generator(
-            data_flow
-            , shuffle = True
-            , epochs = epochs
-            , initial_epoch = initial_epoch
-            #, callbacks = callbacks_list
-            , steps_per_epoch=steps_per_epoch 
-            )
+    
+    def plot_to_image(self, figure):
+        """Converts the matplotlib plot specified by 'figure' to a PNG image and
+        returns it. The supplied figure is closed and inaccessible after this call."""
+        # Save the plot to a PNG in memory.
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        # Closing the figure prevents it from being displayed directly inside
+        # the notebook.
+        plt.close(figure)
+        buf.seek(0)
+        # Convert PNG buffer to TF image
+        image = tf.image.decode_png(buf.getvalue(), channels=4)
+        # Add the batch dimension
+        image = tf.expand_dims(image, 0)
+        return image
         
     def train_with_generator2(self, data_flow, epochs, steps_per_epoch, run_folder, print_every_n_batches = 100, initial_epoch = 0, validation_data = None, ):
         
@@ -374,11 +345,58 @@ class TimbreNet_Model():
         checkpoint2 = ModelCheckpoint(os.path.join(run_folder, 'weights/weights.h5'), save_weights_only = True,save_best_only=True, verbose=0)
         
         logdir = os.path.join(run_folder, "logs/scalars/")
-        tensorboard_callback = TensorBoard(log_dir=logdir,profile_batch=0)
-
-        callbacks_list = [checkpoint1, checkpoint2, tensorboard_callback]
+        scalar_callback = TensorBoard(log_dir=logdir,profile_batch=0)
         
+       
+        logdir_img = os.path.join(run_folder, "logs/image/")
+        file_writer_img = tf.summary.create_file_writer(logdir_img)
+        def image_gen(epoch, logs):
+            n = 0
+            image = []
+            for example in validation_data:
+                fig, ax = plt.subplots(2, 3, sharey=True,figsize=(30,4))
 
+                z = tf.random.normal(shape=(1,self.latent_dim,), mean=0.0, stddev=0.3)
+                gen = self.decoder.predict(z)
+
+                p1 = ax[0,0].imshow(gen[0,:,:,0], cmap='hot')
+                p1_t = ax[0,0].title.set_text('Generated (magnitude)')
+                plt.colorbar(p1,ax=ax[0,0])
+                p2 = ax[1,0].imshow(gen[0,:,:,1], cmap='hot')
+                p2_t = ax[1,0].title.set_text('Generated (phase)')
+                plt.colorbar(p2,ax=ax[1,0])
+
+                p3 = ax[0,1].imshow(example[0][0,:,:,0], cmap='hot')
+                p3_t = ax[0,1].title.set_text('Dataset (magnitude)')
+                plt.colorbar(p3,ax=ax[0,1])
+                p4 = ax[1,1].imshow(example[0][0,:,:,1], cmap='hot')
+                p4_t = ax[1,1].title.set_text('Dataset (phase)')
+                plt.colorbar(p4,ax=ax[1,1])
+
+                out = self.model.predict(example)
+
+                p5 = ax[0,2].imshow(out[0,:,:,0], cmap='hot')
+                p5_t = ax[0,2].title.set_text('Recon (magnitude)')
+                plt.colorbar(p5,ax=ax[0,2])
+                p6 = ax[1,2].imshow(out[0,:,:,1], cmap='hot')
+                p6_t = ax[1,2].title.set_text('Recon (pgase)')
+                plt.colorbar(p6,ax=ax[1,2])
+                
+                image.append(self.plot_to_image(fig))
+                n = n+1
+                if n == 9:
+                    break
+
+            #image = self.plot_to_image(fig)
+
+            with file_writer_img.as_default():
+                for i in range(9):
+                    tf.summary.image("Example "+str(i), image[i], step=epoch)
+                
+        image_callback = LambdaCallback(on_epoch_end=image_gen)
+
+        
+        callbacks_list = [checkpoint1, checkpoint2, scalar_callback,image_callback]
         
         self.model.fit(
             data_flow
@@ -389,6 +407,7 @@ class TimbreNet_Model():
             , steps_per_epoch=steps_per_epoch 
             , validation_data=validation_data
             )
+       
         
 
    
