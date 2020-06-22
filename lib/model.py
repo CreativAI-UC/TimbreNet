@@ -2,11 +2,21 @@ from tensorflow.keras.layers import Input, Conv2D, Conv2DTranspose, Flatten, Den
 from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.callbacks import ModelCheckpoint, TensorBoard
+
+from lib.specgrams_helper import SpecgramsHelper
 
 
 import os
 import pickle
 import numpy as np
+import tensorflow as tf
+
+spec_helper = SpecgramsHelper(audio_length=64000,
+                                  spec_shape=(128, 1024),
+                                  overlap=0.75,
+                                  sample_rate=16000,
+                                  mel_downscale=1)
 
 class TimbreNet_Model():
     def __init__(
@@ -212,7 +222,7 @@ class TimbreNet_Model():
         
         x = conv_t_layer(x)
             
-        x = LeakyReLU()(x)
+        # x = LeakyReLU()(x)
 
         decoder_output = x
 
@@ -244,7 +254,21 @@ class TimbreNet_Model():
 
         optimizer = Adam(lr=learning_rate)
         self.model.compile(optimizer=optimizer, loss = vae_loss,  metrics = [vae_r_loss, vae_kl_loss], experimental_run_tf_function=False)
-        
+    
+    def pre_process(self,path):
+    
+        def read_audio(path):
+            audio = tf.audio.decode_wav(tf.io.read_file(path)).audio
+            audio = tf.reshape(audio, [1,64000,1])
+            return audio
+
+        mel = spec_helper.waves_to_melspecgrams(read_audio(path))
+        melA = mel[0:43200,:,:,0]/13.82#/13.815511 
+        melA = tf.reshape(melA, [128,1024])
+        melF = mel[0:43200,:,:,1]/1.00001 
+        melF = tf.reshape(melF, [128,1024])
+        mel = tf.stack([melA,melF],axis=-1)
+        return mel, mel
         
     def save(self, folder):
 
@@ -273,6 +297,24 @@ class TimbreNet_Model():
                 self.latent_dim
                 ], f)
             
+        with open(os.path.join(folder, 'params.txt'), 'w') as f:
+            f.write('input_dim: '+str(self.input_dim))
+            f.write('\nencoder_conv_filters: '+str(self.encoder_conv_filters))
+            f.write('\nencoder_conv_kernel_size: '+str(self.encoder_conv_kernel_size))
+            f.write('\nencoder_conv_strides: '+str(self.encoder_conv_strides))
+            f.write('\nencoder_average_pool_size: '+str(self.encoder_average_pool_size))
+            f.write('\nencoder_average_pool_stride: '+str(self.encoder_average_pool_stride))
+            f.write('\nencoder_use_dropout: '+str(self.encoder_use_dropout))
+            f.write('\nencoder_dropout_rate: '+str(self.encoder_dropout_rate))
+            f.write('\nencoder_use_batch_norm: '+str(self.encoder_use_batch_norm))
+            f.write('\ndecoder_conv_t_filters: '+str(self.decoder_conv_t_filters))
+            f.write('\ndecoder_conv_t_kernel_size: '+str(self.decoder_conv_t_kernel_size))
+            f.write('\ndecoder_conv_t_strides: '+str(self.decoder_conv_t_strides))
+            f.write('\ndecoder_up_sampling_size: '+str(self.decoder_up_sampling_size))
+            f.write('\ndecoder_use_dropout: '+str(self.decoder_use_dropout))
+            f.write('\ndecoder_dropout_rate: '+str(self.decoder_dropout_rate))
+            f.write('\ndecoder_use_batch_norm: '+str(self.decoder_use_batch_norm))
+            f.write('\nlatent_dim: '+str(self.latent_dim))
             
     def load_weights(self, filepath):
         self.model.load_weights(filepath)
@@ -322,14 +364,31 @@ class TimbreNet_Model():
             #, callbacks = callbacks_list
             , steps_per_epoch=steps_per_epoch 
             )
-        '''self.model.fit(
-            x=None, y=None, batch_size=None, epochs=1, verbose=1, callbacks=None,
-            validation_split=0.0, validation_data=None, shuffle=True, class_weight=None,
-            sample_weight=None, initial_epoch=0, steps_per_epoch=None,
-            validation_steps=None, validation_batch_size=None, validation_freq=1,
-            max_queue_size=10, workers=1, use_multiprocessing=False
-            )'''
         
+    def train_with_generator2(self, data_flow, epochs, steps_per_epoch, run_folder, print_every_n_batches = 100, initial_epoch = 0, validation_data = None, ):
+        
+        self.save(run_folder)
+        
+        checkpoint_filepath = os.path.join(run_folder, "weights/weights-{epoch:03d}-{val_loss:.2f}.h5")
+        checkpoint1 = ModelCheckpoint(checkpoint_filepath, save_weights_only = True, verbose=0)
+        checkpoint2 = ModelCheckpoint(os.path.join(run_folder, 'weights/weights.h5'), save_weights_only = True,save_best_only=True, verbose=0)
+        
+        logdir = os.path.join(run_folder, "logs/scalars/")
+        tensorboard_callback = TensorBoard(log_dir=logdir,profile_batch=0)
+
+        callbacks_list = [checkpoint1, checkpoint2, tensorboard_callback]
+        
+
+        
+        self.model.fit(
+            data_flow
+            , shuffle = True
+            , epochs = epochs
+            , initial_epoch = initial_epoch
+            , callbacks = callbacks_list
+            , steps_per_epoch=steps_per_epoch 
+            , validation_data=validation_data
+            )
         
 
    
