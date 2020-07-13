@@ -36,8 +36,6 @@ class TimbreNet_Model():
         decoder_conv_t_kernel_size  = [3,3,3,3,3,3,3,1],
         decoder_conv_t_strides      = [1,1,1,1,1,1,1,1],
         decoder_up_sampling_size    = [2,2,2,2,2,2,2],
-        decoder_use_dropout         = True,
-        decoder_dropout_rate        = 0.2,
         decoder_use_batch_norm      = False
         ):
         
@@ -57,8 +55,6 @@ class TimbreNet_Model():
         self.decoder_conv_t_kernel_size  = decoder_conv_t_kernel_size
         self.decoder_conv_t_strides      = decoder_conv_t_strides
         self.decoder_up_sampling_size    = decoder_up_sampling_size
-        self.decoder_use_dropout         = decoder_use_dropout
-        self.decoder_dropout_rate        = decoder_dropout_rate
         self.decoder_use_batch_norm      = decoder_use_batch_norm
         
         self.latent_dim = latent_dim
@@ -222,8 +218,6 @@ class TimbreNet_Model():
             )
         
         x = conv_t_layer(x)
-            
-        # x = LeakyReLU()(x)
 
         decoder_output = x
 
@@ -236,22 +230,62 @@ class TimbreNet_Model():
         self.model = Model(model_input, model_output)
         
         
-    def compile(self, learning_rate, r_loss_factor):
+    def compile(self, learning_rate, loss_type, r_loss_factor):
         self.learning_rate = learning_rate
 
-        ### COMPILATION
-        def vae_r_loss(y_true, y_pred):
-            r_loss = K.mean(K.square(y_true - y_pred), axis = [1,2,3])
-            return r_loss_factor * r_loss
+        if loss_type == 'mse':
+            def vae_r_loss(y_true, y_pred):
+                r_loss = K.mean(K.square(y_true - y_pred), axis = [1,2,3])
+                return r_loss_factor * r_loss
 
-        def vae_kl_loss(y_true, y_pred):
-            kl_loss =  -0.5 * K.sum(1 + self.log_var - K.square(self.mu) - K.exp(self.log_var), axis = 1)
-            return kl_loss
+            def vae_kl_loss(y_true, y_pred):
+                kl_loss =  -0.5 * K.sum(1 + self.log_var - K.square(self.mu) - K.exp(self.log_var), axis = 1)
+                return kl_loss
+            
+        elif loss_type == 'mse_fixed_mean':
+            def vae_r_loss(y_true, y_pred):
+                r_loss = K.mean(K.square(y_true - y_pred), axis = [1,2,3])
+                return r_loss_factor * r_loss
 
+            def vae_kl_loss(y_true, y_pred):
+                kl_loss =  -0.5 * K.mean(1 + self.log_var - K.square(self.mu) - K.exp(self.log_var), axis = 1)
+                return kl_loss
+            
+        elif loss_type == 'mse_fixed_sum':
+            def vae_r_loss(y_true, y_pred):
+                r_loss = K.sum(K.square(y_true - y_pred), axis = [1,2,3])
+                return r_loss_factor * r_loss
+
+            def vae_kl_loss(y_true, y_pred):
+                kl_loss =  -0.5 * K.sum(1 + self.log_var - K.square(self.mu) - K.exp(self.log_var), axis = 1)
+                return kl_loss
+
+        elif loss_type == 'sigma':
+            def vae_r_loss(y_true, y_pred):
+                log_sigma = K.log(K.square(K.mean(K.square(y_true - y_pred), [0, 1, 2, 3], keepdims=True)))
+                r_loss = K.sum(0.5 * ((y_true - y_pred) / K.exp(log_sigma)) ** 2 + log_sigma + 0.5 * np.log(2 * np.pi))
+                return r_loss
+                
+            def vae_kl_loss(y_true, y_pred):
+                kl_loss =  -0.5 * K.sum(1 + self.log_var - K.square(self.mu) - K.exp(self.log_var), axis = 1)
+                return kl_loss
+            
+        elif loss_type == 'sigma_fixed':
+            def vae_r_loss(y_true, y_pred):
+                log_sigma = K.log(K.square(K.mean(K.square(y_true - y_pred), [0, 1, 2, 3], keepdims=True)))
+                r_loss = K.mean(0.5 * ((y_true - y_pred) / K.exp(log_sigma)) ** 2 + log_sigma + 0.5 * np.log(2 * np.pi))
+                return r_loss
+                
+            def vae_kl_loss(y_true, y_pred):
+                kl_loss =  -0.5 * K.mean(1 + self.log_var - K.square(self.mu) - K.exp(self.log_var), axis = 1)
+                return kl_loss
+                
+
+            
         def vae_loss(y_true, y_pred):
-            r_loss = vae_r_loss(y_true, y_pred)
-            kl_loss = vae_kl_loss(y_true, y_pred)
-            return  r_loss + kl_loss
+                r_loss = vae_r_loss(y_true, y_pred)
+                kl_loss = vae_kl_loss(y_true, y_pred)
+                return  r_loss + kl_loss
 
         optimizer = Adam(lr=learning_rate)
         self.model.compile(optimizer=optimizer, loss = vae_loss,  metrics = [vae_r_loss, vae_kl_loss], experimental_run_tf_function=False)
@@ -270,6 +304,22 @@ class TimbreNet_Model():
         melF = tf.reshape(melF, [128,1024])
         mel = tf.stack([melA,melF],axis=-1)
         return mel, mel
+    
+    def gen_audio_and_spec(self, z=None, n_to_show=1):
+        if z==None:
+            znew = np.random.normal(size = (n_to_show,self.latent_dim))
+        else: 
+            znew = z
+        mel_generated = self.decoder.predict(np.array(znew))
+        audio_generated = np.zeros((mel_generated.shape[0],4*16000))
+        for i in range(mel_generated.shape[0]):
+            melA = mel_generated[i:i+1,:,:,0]*13.82
+            melB = mel_generated[i:i+1,:,:,1]
+            mel= tf.stack([melA,melB],axis=-1)
+            audio = spec_helper.melspecgrams_to_waves(mel)
+            audio = np.clip(audio,-0.999999,0.999999)
+            audio_generated[i] = audio[0,:,0]
+        return audio_generated, mel_generated
         
     def save(self, folder):
 
@@ -292,8 +342,6 @@ class TimbreNet_Model():
                 self.decoder_conv_t_kernel_size,
                 self.decoder_conv_t_strides,
                 self.decoder_up_sampling_size,
-                self.decoder_use_dropout,
-                self.decoder_dropout_rate,
                 self.decoder_use_batch_norm, 
                 self.latent_dim
                 ], f)
@@ -312,8 +360,6 @@ class TimbreNet_Model():
             f.write('\ndecoder_conv_t_kernel_size: '+str(self.decoder_conv_t_kernel_size))
             f.write('\ndecoder_conv_t_strides: '+str(self.decoder_conv_t_strides))
             f.write('\ndecoder_up_sampling_size: '+str(self.decoder_up_sampling_size))
-            f.write('\ndecoder_use_dropout: '+str(self.decoder_use_dropout))
-            f.write('\ndecoder_dropout_rate: '+str(self.decoder_dropout_rate))
             f.write('\ndecoder_use_batch_norm: '+str(self.decoder_use_batch_norm))
             f.write('\nlatent_dim: '+str(self.latent_dim))
             
@@ -335,6 +381,40 @@ class TimbreNet_Model():
         # Add the batch dimension
         image = tf.expand_dims(image, 0)
         return image
+    
+    def triple_out_to_plot(self, spec1,spec2,spec3):
+        fig, ax = plt.subplots(2, 3, sharey=True,figsize=(30,4))
+
+        p1 = ax[0,0].imshow(spec1[0,:,:,0], cmap='hot')
+        p1_t = ax[0,0].title.set_text('Generated (magnitude)')
+        plt.colorbar(p1,ax=ax[0,0])
+        p2 = ax[1,0].imshow(spec1[0,:,:,1], cmap='hot')
+        p2_t = ax[1,0].title.set_text('Generated (phase)')
+        plt.colorbar(p2,ax=ax[1,0])
+
+        p3 = ax[0,1].imshow(spec2[0,:,:,0], cmap='hot')
+        p3_t = ax[0,1].title.set_text('Dataset (magnitude)')
+        plt.colorbar(p3,ax=ax[0,1])
+        p4 = ax[1,1].imshow(spec2[0,:,:,1], cmap='hot')
+        p4_t = ax[1,1].title.set_text('Dataset (phase)')
+        plt.colorbar(p4,ax=ax[1,1])
+
+        p5 = ax[0,2].imshow(spec3[0,:,:,0], cmap='hot')
+        p5_t = ax[0,2].title.set_text('Recon (magnitude)')
+        plt.colorbar(p5,ax=ax[0,2])
+        p6 = ax[1,2].imshow(spec3[0,:,:,1], cmap='hot')
+        p6_t = ax[1,2].title.set_text('Recon (pgase)')
+        plt.colorbar(p6,ax=ax[1,2])
+
+        return fig
+    
+    def out_to_audio(self, spec):
+        melA = spec[:,:,:,0]*13.82
+        melB = spec[:,:,:,1]
+        mel= tf.stack([melA,melB],axis=-1)
+        audio= spec_helper.melspecgrams_to_waves(mel)
+        audio = np.clip(audio,-0.999999,0.999999)
+        return audio
         
     def train_with_generator2(self, data_flow, epochs, steps_per_epoch, run_folder, print_every_n_batches = 100, initial_epoch = 0, validation_data = None, ):
         
@@ -347,56 +427,52 @@ class TimbreNet_Model():
         logdir = os.path.join(run_folder, "logs/scalars/")
         scalar_callback = TensorBoard(log_dir=logdir,profile_batch=0)
         
-       
         logdir_img = os.path.join(run_folder, "logs/image/")
         file_writer_img = tf.summary.create_file_writer(logdir_img)
+        
+        logdir_audio = os.path.join(run_folder, "logs/audio/")
+        file_writer_audio = tf.summary.create_file_writer(logdir_audio)
+        
         def image_gen(epoch, logs):
             n = 0
             image = []
+            audio = []
             for example in validation_data:
-                fig, ax = plt.subplots(2, 3, sharey=True,figsize=(30,4))
-
                 z = tf.random.normal(shape=(1,self.latent_dim,), mean=0.0, stddev=0.3)
-                gen = self.decoder.predict(z)
+                spec_gen = self.decoder.predict(z)
+                spec_org = example[0]
+                spec_rec = self.model.predict(example)
 
-                p1 = ax[0,0].imshow(gen[0,:,:,0], cmap='hot')
-                p1_t = ax[0,0].title.set_text('Generated (magnitude)')
-                plt.colorbar(p1,ax=ax[0,0])
-                p2 = ax[1,0].imshow(gen[0,:,:,1], cmap='hot')
-                p2_t = ax[1,0].title.set_text('Generated (phase)')
-                plt.colorbar(p2,ax=ax[1,0])
-
-                p3 = ax[0,1].imshow(example[0][0,:,:,0], cmap='hot')
-                p3_t = ax[0,1].title.set_text('Dataset (magnitude)')
-                plt.colorbar(p3,ax=ax[0,1])
-                p4 = ax[1,1].imshow(example[0][0,:,:,1], cmap='hot')
-                p4_t = ax[1,1].title.set_text('Dataset (phase)')
-                plt.colorbar(p4,ax=ax[1,1])
-
-                out = self.model.predict(example)
-
-                p5 = ax[0,2].imshow(out[0,:,:,0], cmap='hot')
-                p5_t = ax[0,2].title.set_text('Recon (magnitude)')
-                plt.colorbar(p5,ax=ax[0,2])
-                p6 = ax[1,2].imshow(out[0,:,:,1], cmap='hot')
-                p6_t = ax[1,2].title.set_text('Recon (pgase)')
-                plt.colorbar(p6,ax=ax[1,2])
+                image.append(self.plot_to_image(self.triple_out_to_plot(spec_gen,spec_org,spec_rec)))
+                audio.append(np.concatenate((self.out_to_audio(spec_gen),
+                                             self.out_to_audio(spec_org),
+                                             self.out_to_audio(spec_rec)),axis=0))
                 
-                image.append(self.plot_to_image(fig))
                 n = n+1
                 if n == 9:
                     break
 
-            #image = self.plot_to_image(fig)
-
             with file_writer_img.as_default():
                 for i in range(9):
                     tf.summary.image("Example "+str(i), image[i], step=epoch)
-                
-        image_callback = LambdaCallback(on_epoch_end=image_gen)
-
+            with file_writer_audio.as_default():
+                for i in range(9):
+                    tf.summary.audio("Example "+str(i), audio[i], sample_rate=16000, max_outputs=9, encoding='wav', step=epoch)
         
-        callbacks_list = [checkpoint2, scalar_callback,image_callback]
+        image_audio_callback = LambdaCallback(on_epoch_end=image_gen)
+        
+        logdir_hist = os.path.join(run_folder, "logs/hist/")
+        file_writer_hist = tf.summary.create_file_writer(logdir_hist)
+        
+        def hist_gen(epoch, logs):
+            z = self.encoder.predict(validation_data)
+            with file_writer_hist.as_default():
+                for i in range(self.latent_dim):
+                    tf.summary.histogram("Latent_dim: "+str(i), z[:,i], step=epoch)
+                
+        hist_callback = LambdaCallback(on_epoch_end=hist_gen)
+        
+        callbacks_list = [checkpoint2, scalar_callback, image_audio_callback, hist_callback]
         
         self.model.fit(
             data_flow
