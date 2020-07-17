@@ -3,37 +3,22 @@ import sys
 import numpy as np
 import tensorflow as tf
 from scipy.io.wavfile import write
-from lib.model import CVAE as Model
-from lib.latent_chord import latent_chord
-from lib.specgrams_helper import SpecgramsHelper
+from .lib.latent_chord import latent_chord
+import time
 
 
 def generate_chord_from_trained_model(trained_model_path,
                                       latent_dim,
-                                      sample_points,
-                                      chord_saving_path):
+                                      sample_point,
+                                      chord_saving_path,model,spec_helper):
     
     if not os.path.exists(chord_saving_path):
         os.makedirs(chord_saving_path)
     
-    spec_helper = SpecgramsHelper(audio_length=64000,
-                           spec_shape=(128, 1024),
-                           overlap=0.75,
-                           sample_rate=16000,
-                           mel_downscale=1)
-   
-    model = Model(latent_dim)
-    print('\n\nLoading Trained Model...')
-    model.load_weights(trained_model_path)
-    print('Success Loading Trained Model!\n')
-    
-    n = 1
-    for sample_point in sample_points:
-        chord = latent_chord(tf.constant([sample_point], dtype='float32'),model,spec_helper)
-        write(chord_saving_path+'chord'+str(n)+'.wav', data = chord.audio, rate = 16000)
-        print('Chord '+str(n)+' generated!')
-        n += 1
-    print('\n\nSUCCESS: ALL CHORDS GENERATED!    (chords are saved at '+chord_saving_path+')')
+    filename = chord_saving_path+str(time.time())+'.wav'
+    chord = latent_chord(tf.constant([sample_point], dtype='float32'),model,spec_helper)
+    write(filename, data = chord.audio, rate = 16000)
+    return filename
              
     
 if __name__ == '__main__':

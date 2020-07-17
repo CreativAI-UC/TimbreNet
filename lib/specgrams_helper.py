@@ -21,7 +21,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import lib.spectral_ops as spectral_ops
+from .spectral_ops import *
 import numpy as np
 import tensorflow as tf
 
@@ -131,7 +131,7 @@ class SpecgramsHelper(object):
 
     phase_angle = tf.math.angle(stfts)
     if self._ifreq:
-      p = spectral_ops.instantaneous_frequency(phase_angle)
+      p = instantaneous_frequency(phase_angle)
     else:
       p = phase_angle / np.pi
 
@@ -156,7 +156,7 @@ class SpecgramsHelper(object):
     else:
       phase_angle = p * np.pi
 
-    return spectral_ops.polar2rect(mag, phase_angle)[:, :, :, tf.newaxis]
+    return polar2rect(mag, phase_angle)[:, :, :, tf.newaxis]
 
   def _linear_to_mel_matrix(self):
     """Get the mel transformation matrix."""
@@ -164,7 +164,7 @@ class SpecgramsHelper(object):
     lower_edge_hertz = 0.0
     upper_edge_hertz = self._sample_rate / 2.0
     num_mel_bins = num_freq_bins // self._mel_downscale
-    return spectral_ops.linear_to_mel_weight_matrix(
+    return linear_to_mel_weight_matrix(
         num_mel_bins, num_freq_bins, self._sample_rate, lower_edge_hertz,
         upper_edge_hertz)
 
@@ -197,7 +197,7 @@ class SpecgramsHelper(object):
     l2mel = tf.cast(self._linear_to_mel_matrix(),'float32')
     logmelmag2 = self._safe_log(tf.tensordot(mag2, l2mel, 1))
     mel_phase_angle = tf.tensordot(phase_angle, l2mel, 1)
-    mel_p = spectral_ops.instantaneous_frequency(mel_phase_angle)
+    mel_p = instantaneous_frequency(mel_phase_angle)
 
     return tf.concat(
         [logmelmag2[:, :, :, tf.newaxis], mel_p[:, :, :, tf.newaxis]], axis=-1)
@@ -222,7 +222,7 @@ class SpecgramsHelper(object):
     logmag = 0.5 * self._safe_log(mag2)
     mel_phase_angle = tf.cumsum(mel_p * np.pi, axis=-2)
     phase_angle = tf.tensordot(mel_phase_angle, mel2l, 1)
-    p = spectral_ops.instantaneous_frequency(phase_angle)
+    p = instantaneous_frequency(phase_angle)
 
     return tf.concat(
         [logmag[:, :, :, tf.newaxis], p[:, :, :, tf.newaxis]], axis=-1)
