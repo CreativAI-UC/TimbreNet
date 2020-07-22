@@ -236,7 +236,7 @@ class TimbreNet_Model():
         if loss_type == 'mse':
             def vae_r_loss(y_true, y_pred):
                 r_loss = K.mean(K.square(y_true - y_pred), axis = [1,2,3])
-                return r_loss_factor * r_loss
+                return r_loss
 
             def vae_kl_loss(y_true, y_pred):
                 kl_loss =  -0.5 * K.sum(1 + self.log_var - K.square(self.mu) - K.exp(self.log_var), axis = 1)
@@ -245,7 +245,7 @@ class TimbreNet_Model():
         elif loss_type == 'mse_fixed_mean':
             def vae_r_loss(y_true, y_pred):
                 r_loss = K.mean(K.square(y_true - y_pred), axis = [1,2,3])
-                return r_loss_factor * r_loss
+                return r_loss
 
             def vae_kl_loss(y_true, y_pred):
                 kl_loss =  -0.5 * K.mean(1 + self.log_var - K.square(self.mu) - K.exp(self.log_var), axis = 1)
@@ -254,7 +254,7 @@ class TimbreNet_Model():
         elif loss_type == 'mse_fixed_sum':
             def vae_r_loss(y_true, y_pred):
                 r_loss = K.sum(K.square(y_true - y_pred), axis = [1,2,3])
-                return r_loss_factor * r_loss
+                return r_loss
 
             def vae_kl_loss(y_true, y_pred):
                 kl_loss =  -0.5 * K.sum(1 + self.log_var - K.square(self.mu) - K.exp(self.log_var), axis = 1)
@@ -285,7 +285,7 @@ class TimbreNet_Model():
         def vae_loss(y_true, y_pred):
                 r_loss = vae_r_loss(y_true, y_pred)
                 kl_loss = vae_kl_loss(y_true, y_pred)
-                return  r_loss + kl_loss
+                return  (r_loss_factor * r_loss) + kl_loss
 
         optimizer = Adam(lr=learning_rate)
         self.model.compile(optimizer=optimizer, loss = vae_loss,  metrics = [vae_r_loss, vae_kl_loss], experimental_run_tf_function=False)
