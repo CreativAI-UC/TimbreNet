@@ -10,11 +10,11 @@ from lib.model import TimbreNet_Model
 from tensorboard.plugins import projector
 from lib.specgrams_helper import SpecgramsHelper
 
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 tf.test.is_gpu_available()
 
 
-RUN_ID = 'ID_2020_07_17_14_13_11_copy'
+RUN_ID = 'ID_2020_09_06_07_30_29'
 RUN_FOLDER = './run/{}'.format(RUN_ID)
 
 with open(os.path.join(RUN_FOLDER, 'train_params.txt')) as f:
