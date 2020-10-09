@@ -4,12 +4,12 @@ import sys
 import numpy as np
 import tensorflow as tf
 from scipy.io.wavfile import write
+# import pydub
 from .lib.latent_chord import latent_chord
 import time
 from pydub import AudioSegment
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 logging.getLogger('tensorflow').setLevel(logging.FATAL)
-
 
 def generate_chord_from_trained_model(trained_model_path,
                                       latent_dim,
@@ -18,10 +18,17 @@ def generate_chord_from_trained_model(trained_model_path,
     
     if not os.path.exists(chord_saving_path):
         os.makedirs(chord_saving_path)
-    
-    filename = chord_saving_path+str(time.time())+'.wav'
+
+    file_time = str(time.time())
+    filename = chord_saving_path+file_time+'.wav'
+
     chord = latent_chord(tf.constant([sample_point], dtype='float32'),model,spec_helper)
-    write(filename, data = chord.audio, rate = 16000)
+    write(filename, 16000, chord.audio)
+
+    sound = AudioSegment.from_wav(filename)
+    filename = chord_saving_path+file_time+'.mp3'
+    sound.export(filename, format='mp3')
+
     return filename
              
     
