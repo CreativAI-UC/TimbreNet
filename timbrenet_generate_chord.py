@@ -1,10 +1,14 @@
 import os
+import logging
 import sys
 import numpy as np
 import tensorflow as tf
 from scipy.io.wavfile import write
 from .lib.latent_chord import latent_chord
 import time
+from pydub import AudioSegment
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+logging.getLogger('tensorflow').setLevel(logging.FATAL)
 
 
 def generate_chord_from_trained_model(trained_model_path,
