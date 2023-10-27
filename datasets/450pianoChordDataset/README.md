@@ -15,5 +15,5 @@ Details:
 - Chords in de C mayor scale:
 - Cords: C2, Dm2, Em2, F2, G2, Am2, Bdim2, C3, Dm3, Em3, F3, G3, Am3, Bdim3, C4
 - Dynamics: f (forte), mf (metsoforte), p (piano)
-- 10 examples of each combinatiorn, 450 examples total (450 = 15*3*10)
+- 10 examples of each combination, 450 examples total (450 = 15*3*10)
 - Metadata in the name of the chord. For example: "Bdim3_m_4.wav" is the 4th example of a mf (metsoforte) Bdim cord in te 3rd octave.  
